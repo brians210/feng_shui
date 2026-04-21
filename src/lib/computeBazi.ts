@@ -90,6 +90,126 @@ const STRENGTH_LEVEL: Record<string, string> = {
   Balanced: '中和',
 };
 
+// ============================================================
+// Traditional 扶抑 strength calculation.
+//
+// The underlying @aharris02/bazi-calculator library's
+// `favorableElements` output has a quirk: its "Balanced" branch
+// reuses the same mapping as "Weak" (always favors Resource +
+// Companion), which contradicts traditional 扶抑 theory when the
+// day master's own element already dominates the chart.
+//
+// This module re-derives strength from 月令 + 日支 + 五行分佈, then
+// applies the classical 扶抑 喜忌 mapping.
+//
+// To revert to the raw library output, flip this flag to `false`
+// (or `git revert` the commit that introduced this block).
+// ============================================================
+const USE_TRADITIONAL_STRENGTH = true;
+
+const WUXING_GENERATES: Record<Wuxing, Wuxing> = {
+  木: '火', 火: '土', 土: '金', 金: '水', 水: '木',
+};
+const WUXING_CONTROLS: Record<Wuxing, Wuxing> = {
+  木: '土', 火: '金', 土: '水', 金: '木', 水: '火',
+};
+
+function generatorOf(target: Wuxing): Wuxing {
+  const entry = (Object.entries(WUXING_GENERATES) as Array<[Wuxing, Wuxing]>)
+    .find(([, t]) => t === target);
+  return entry ? entry[0] : target;
+}
+
+function controllerOf(target: Wuxing): Wuxing {
+  const entry = (Object.entries(WUXING_CONTROLS) as Array<[Wuxing, Wuxing]>)
+    .find(([, t]) => t === target);
+  return entry ? entry[0] : target;
+}
+
+type Relation = 'resource' | 'companion' | 'output' | 'wealth' | 'control';
+function relationOf(day: Wuxing, target: Wuxing): Relation {
+  if (day === target) return 'companion';
+  if (WUXING_GENERATES[target] === day) return 'resource';
+  if (WUXING_GENERATES[day] === target) return 'output';
+  if (WUXING_CONTROLS[day] === target) return 'wealth';
+  return 'control';
+}
+
+interface TraditionalStrength {
+  level: string;
+  score: number;
+  favorable: Wuxing[];
+  unfavorable: Wuxing[];
+}
+
+function computeTraditionalStrength(params: {
+  dayWuxing: Wuxing;
+  monthZhi: DiZhi;
+  dayZhi: DiZhi;
+  wuxingCount: Record<Wuxing, number>;
+}): TraditionalStrength {
+  const { dayWuxing, monthZhi, dayZhi, wuxingCount } = params;
+  const monthWuxing = DI_ZHI[monthZhi]?.wuxing ?? dayWuxing;
+  const dayZhiWuxing = DI_ZHI[dayZhi]?.wuxing ?? dayWuxing;
+
+  let pts = 0;
+
+  // 月令：得令 / 不得令，傳統權重最重
+  const monthRel = relationOf(dayWuxing, monthWuxing);
+  if (monthRel === 'companion') pts += 3;
+  else if (monthRel === 'resource') pts += 3;
+  else if (monthRel === 'output') pts -= 2;
+  else if (monthRel === 'wealth') pts -= 2;
+  else if (monthRel === 'control') pts -= 3;
+
+  // 日支：得地
+  const dayRel = relationOf(dayWuxing, dayZhiWuxing);
+  if (dayRel === 'companion') pts += 1.5;
+  else if (dayRel === 'resource') pts += 1;
+  else if (dayRel === 'output') pts -= 1;
+  else if (dayRel === 'wealth') pts -= 1;
+  else if (dayRel === 'control') pts -= 1.5;
+
+  // 五行分佈：實際印比(生我+同我) 佔比
+  const resourceW = generatorOf(dayWuxing);
+  const supportPct = (wuxingCount[dayWuxing] ?? 0) + (wuxingCount[resourceW] ?? 0);
+  if (supportPct >= 55) pts += 2;
+  else if (supportPct >= 45) pts += 1;
+  else if (supportPct <= 25) pts -= 2;
+  else if (supportPct <= 35) pts -= 1;
+
+  let level: string;
+  if (pts >= 3) level = '身強';
+  else if (pts <= -3) level = '身弱';
+  else level = '中和';
+
+  const score = Math.max(5, Math.min(95, Math.round(50 + pts * 7)));
+
+  const outputW = WUXING_GENERATES[dayWuxing];
+  const wealthW = WUXING_CONTROLS[dayWuxing];
+  const controlW = controllerOf(dayWuxing);
+
+  let favorable: Wuxing[];
+  let unfavorable: Wuxing[];
+  if (level === '身強') {
+    favorable = [outputW, wealthW, controlW];
+    unfavorable = [dayWuxing, resourceW];
+  } else if (level === '身弱') {
+    favorable = [resourceW, dayWuxing];
+    unfavorable = [outputW, wealthW, controlW];
+  } else {
+    // 中和：看實際五行分佈，最旺者為忌，最弱者為喜
+    const entries = Object.entries(wuxingCount) as Array<[Wuxing, number]>;
+    const sorted = [...entries].sort((a, b) => b[1] - a[1]);
+    const strongest = sorted[0][0];
+    const weakest = sorted[sorted.length - 1][0];
+    favorable = Array.from(new Set([weakest, generatorOf(weakest)]));
+    unfavorable = Array.from(new Set([strongest, generatorOf(strongest)]));
+  }
+
+  return { level, score, favorable, unfavorable };
+}
+
 function pickFirstChar<T extends string>(s: string | undefined, fallback: T): T {
   if (!s) return fallback;
   return s.charAt(0) as T;
@@ -309,20 +429,33 @@ export function computeBazi(input: FormInput): BaziResult {
     水: five.WATER ?? 0,
   };
 
-  // 日主強弱
+  // 日主強弱 — library output as fallback
   const rawStrength = basic?.dayMasterStrength?.strength as string | undefined;
-  const level = STRENGTH_LEVEL[rawStrength ?? ''] ?? '中和';
+  const libraryLevel = STRENGTH_LEVEL[rawStrength ?? ''] ?? '中和';
   const rawScore = basic?.dayMasterStrength?.score;
-  const score = typeof rawScore === 'number'
+  const libraryScore = typeof rawScore === 'number'
     ? Math.max(2, Math.min(98, Math.round(rawScore >= 0 && rawScore <= 100 ? rawScore : 50 + rawScore / 2)))
     : 50;
+  const libraryFavorable: Wuxing[] = ((basic?.favorableElements?.primary ?? []) as string[])
+    .map((e) => toWuxing(e))
+    .filter((w): w is Wuxing => Boolean(w));
+  const libraryUnfavorable: Wuxing[] = ((basic?.favorableElements?.unfavorable ?? []) as string[])
+    .map((e) => toWuxing(e))
+    .filter((w): w is Wuxing => Boolean(w));
 
-  const favorable: Wuxing[] = ((basic?.favorableElements?.primary ?? []) as string[])
-    .map((e) => toWuxing(e))
-    .filter((w): w is Wuxing => Boolean(w));
-  const unfavorable: Wuxing[] = ((basic?.favorableElements?.unfavorable ?? []) as string[])
-    .map((e) => toWuxing(e))
-    .filter((w): w is Wuxing => Boolean(w));
+  const traditional = USE_TRADITIONAL_STRENGTH
+    ? computeTraditionalStrength({
+        dayWuxing: ganInfo?.wuxing ?? '木',
+        monthZhi,
+        dayZhi,
+        wuxingCount,
+      })
+    : null;
+
+  const level = traditional?.level ?? libraryLevel;
+  const score = traditional?.score ?? libraryScore;
+  const favorable = traditional?.favorable ?? libraryFavorable;
+  const unfavorable = traditional?.unfavorable ?? libraryUnfavorable;
 
   const summary = buildStrengthSummary({
     dayGan,
