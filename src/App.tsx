@@ -1,162 +1,155 @@
 import { useState } from 'react';
-import { Layout, Typography, Card, Tabs } from 'antd';
-import { toDate } from 'date-fns-tz';
-import { BaziCalculator } from '@aharris02/bazi-calculator-by-alvamind';
-import InputForm, { type BirthData } from './components/InputForm';
-import BaziChart from './components/BaziChart';
-import Interpretations from './components/Interpretations';
-import LuckPillars from './components/LuckPillars';
-import AnnualPillars from './components/AnnualPillars';
-import DetailedPillars from './components/DetailedPillars';
-import NobleStars from './components/NobleStars';
-import './App.css';
+import BirthForm from './components/BirthForm';
+import BaziTable from './components/BaziTable';
+import WuxingChart from './components/WuxingChart';
+import StrengthPanel from './components/StrengthPanel';
+import OverviewCard from './components/OverviewCard';
+import DayunTable from './components/DayunTable';
+import { WUXING_CLASS } from './data/baziConstants';
+import { computeBazi, type BaziResult, type FormInput } from './lib/computeBazi';
 
-const { Header, Content, Footer } = Layout;
-const { Title } = Typography;
+const pad = (n: number) => String(n).padStart(2, '0');
+
+function formatInputSummary(d: FormInput): string {
+  const cal = d.calendar === 'solar' ? '陽曆' : '農曆';
+  const gen = d.gender === 'male' ? '乾造' : '坤造';
+  return `${cal} ${d.year}年${pad(d.month)}月${pad(d.day)}日 ${pad(d.hour)}:${pad(d.minute)} · ${gen}`;
+}
+
+interface SectionHeaderProps {
+  num: string;
+  title: string;
+}
+
+function SectionHeader({ num, title }: SectionHeaderProps) {
+  return (
+    <div className="section-header">
+      <span className="num">{num}</span>
+      <span className="title">{title}</span>
+      <span className="rule" />
+    </div>
+  );
+}
 
 function App() {
-  const [pillars, setPillars] = useState<any>(null);
-  const [analysis, setAnalysis] = useState<any>(null);
-  const [luckPillars, setLuckPillars] = useState<any>(null);
-  const [detailedPillars, setDetailedPillars] = useState<any>(null);
-  const [annualPillars, setAnnualPillars] = useState<any>(null);
-  const [calculator, setCalculator] = useState<any>(null);
+  const [input, setInput] = useState<FormInput | null>(null);
+  const [result, setResult] = useState<BaziResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleCalculate = (data: BirthData) => {
-    try {
-      // Convert Dayjs to Date object with timezone
-      const dateString = data.date?.format('YYYY-MM-DD');
-      const timeString = data.time?.format('HH:mm:ss');
-      const dateTimeString = `${dateString}T${timeString}`;
+  const handleSubmit = (data: FormInput) => {
+    setLoading(true);
+    setError(null);
+    setInput(data);
 
-      const birthDate = toDate(dateTimeString, { timeZone: data.timezone });
-
-      // Initialize Bazi Calculator
-      const calc = new BaziCalculator(
-        birthDate,
-        data.gender,
-        data.timezone,
-        true // birth time is known
-      );
-
-      // Get complete analysis
-      const completeAnalysis = calc.getCompleteAnalysis();
-
-      // Get annual pillars for current and next 10 years
-      const currentYear = new Date().getFullYear();
-      const annualPillarsList = [];
-      for (let i = -3; i < 10; i++) {
-        const pillar = calc.getAnnualPillar(currentYear + i);
-        if (pillar) {
-          annualPillarsList.push({ year: currentYear + i, pillar });
-        }
+    // 微小延遲讓「排盤中…」有感覺
+    setTimeout(() => {
+      try {
+        const r = computeBazi(data);
+        setResult(r);
+      } catch (err) {
+        console.error('[computeBazi] failed', err);
+        setError('排盤失敗，請確認輸入的日期時間是否正確。');
+        setResult(null);
+      } finally {
+        setLoading(false);
+        setTimeout(() => {
+          const el = document.getElementById('result-anchor');
+          if (el) window.scrollTo({ top: el.offsetTop - 20, behavior: 'smooth' });
+        }, 50);
       }
-
-      // Get timed analysis for current luck pillar
-      const timedAnalysis = calc.getTimedAnalysis(new Date(), data.timezone);
-
-      // Update state
-      setPillars(completeAnalysis.mainPillars || {});
-      setAnalysis(completeAnalysis || {});
-      setLuckPillars(completeAnalysis.luckPillars || null);
-      setDetailedPillars(completeAnalysis.detailedPillars || null);
-      setAnnualPillars({
-        pillars: annualPillarsList,
-        currentYear: currentYear,
-        currentLuckPillar: timedAnalysis?.currentLuckPillar || null,
-      });
-      setCalculator(calc);
-
-      console.log('Bazi Chart:', calc.toString());
-      console.log('Complete Analysis:', completeAnalysis);
-      console.log('Timed Analysis:', timedAnalysis);
-    } catch (error) {
-      console.error('Error calculating Bazi:', error);
-      alert('Error calculating your Bazi chart. Please check your input and try again.');
-    }
+    }, 400);
   };
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Header style={{ background: '#fff', padding: '0 50px', borderBottom: '1px solid #f0f0f0' }}>
-        <Title level={2} style={{ margin: '16px 0' }}>
-          八字命理 Bazi Calculator
-        </Title>
-      </Header>
+    <div className="app">
+      <header className="masthead">
+        <h1 className="title-zh">
+          八 字 命 盤
+          <span className="seal">排盤</span>
+        </h1>
+        <div className="subtitle">四柱八字 · 十神神煞 · 五行喜忌 · 大運流年</div>
+      </header>
 
-      <Content style={{ padding: '50px' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <Card>
-            <InputForm onCalculate={handleCalculate} />
-          </Card>
+      <BirthForm onSubmit={handleSubmit} loading={loading} />
 
-          {pillars && analysis && (
-            <Tabs
-              defaultActiveKey="1"
-              style={{ marginTop: '24px' }}
-              items={[
-                {
-                  key: '1',
-                  label: '基本分析 Basic',
-                  children: (
-                    <>
-                      <BaziChart pillars={pillars} />
-                      <Interpretations analysis={analysis} />
-                    </>
-                  ),
-                },
-                {
-                  key: '2',
-                  label: '大運流年 Fortune',
-                  children: (
-                    <>
-                      {luckPillars && (
-                        <LuckPillars
-                          pillars={luckPillars.pillars || []}
-                          currentLuckPillar={annualPillars?.currentLuckPillar}
-                          favorableElements={analysis.basicAnalysis?.favorableElements?.primary || []}
-                          unfavorableElements={analysis.basicAnalysis?.favorableElements?.unfavorable || []}
-                        />
-                      )}
-                      {annualPillars && (
-                        <AnnualPillars
-                          pillars={annualPillars.pillars}
-                          currentYearNumber={annualPillars.currentYear}
-                          favorableElements={analysis.basicAnalysis?.favorableElements?.primary || []}
-                          unfavorableElements={analysis.basicAnalysis?.favorableElements?.unfavorable || []}
-                        />
-                      )}
-                    </>
-                  ),
-                },
-                {
-                  key: '3',
-                  label: '詳細分析 Details',
-                  children: (
-                    <>
-                      {detailedPillars && <DetailedPillars pillars={detailedPillars} />}
-                    </>
-                  ),
-                },
-                {
-                  key: '4',
-                  label: '神煞五行 Stars',
-                  children: (
-                    <>
-                      {analysis.basicAnalysis && <NobleStars basicAnalysis={analysis.basicAnalysis} />}
-                    </>
-                  ),
-                },
-              ]}
-            />
-          )}
+      {error && (
+        <div
+          style={{
+            background: '#fbf0ec',
+            border: '1px solid var(--accent-red)',
+            color: 'var(--accent-red)',
+            padding: '12px 16px',
+            borderRadius: 2,
+            fontFamily: 'var(--serif)',
+            marginBottom: 16,
+          }}
+        >
+          {error}
         </div>
-      </Content>
+      )}
 
-      <Footer style={{ textAlign: 'center' }}>
-        Bazi Calculator ©{new Date().getFullYear()} | For entertainment and educational purposes
-      </Footer>
-    </Layout>
+      {!result && !loading && !error && (
+        <div className="empty-state">
+          <div className="big">盤</div>
+          <div>請輸入出生資訊，點擊「起盤」以生成命盤</div>
+        </div>
+      )}
+
+      {result && input && (
+        <>
+          <div id="result-anchor" />
+
+          <SectionHeader num="ONE" title="命主資訊" />
+          <div className="person-card">
+            {input.name && (
+              <div className="field-item">
+                <div className="lbl">姓名</div>
+                <div className="val">{input.name}</div>
+              </div>
+            )}
+            <div className="field-item">
+              <div className="lbl">性別</div>
+              <div className="val">{input.gender === 'male' ? '乾造（男）' : '坤造（女）'}</div>
+            </div>
+            <div className="field-item">
+              <div className="lbl">出生</div>
+              <div className="val">{formatInputSummary(input)}</div>
+            </div>
+            <div className="field-item">
+              <div className="lbl">日主</div>
+              <div className="val">
+                <span
+                  className={WUXING_CLASS[result.rizhu.wuxing]}
+                  style={{ fontSize: 20, fontWeight: 900, marginRight: 8 }}
+                >
+                  {result.rizhu.gan}
+                </span>
+                {result.rizhu.yinyang}
+                {result.rizhu.wuxing}
+              </div>
+            </div>
+          </div>
+
+          <SectionHeader num="TWO" title="四柱八字" />
+          <BaziTable data={result} />
+
+          <SectionHeader num="THREE" title="五行分佈" />
+          <WuxingChart counts={result.wuxingCount} rizhuWuxing={result.rizhu.wuxing} />
+
+          <SectionHeader num="FOUR" title="日主強弱" />
+          <StrengthPanel strength={result.strength} rizhu={result.rizhu} />
+
+          <SectionHeader num="FIVE" title="命格概述" />
+          <OverviewCard text={result.overview} />
+
+          <SectionHeader num="SIX" title="大運流程" />
+          <DayunTable dayun={result.dayun} />
+        </>
+      )}
+
+      <div className="site-foot">© 八字排盤 · 僅供命理研究參考</div>
+    </div>
   );
 }
 
