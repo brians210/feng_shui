@@ -232,6 +232,42 @@ const CONTROLS: Record<Wuxing, Wuxing> = {
   木: '土', 土: '水', 水: '火', 火: '金', 金: '木',
 };
 
+// 五鼠遁: 子時 天干 derived from 日干
+export const HOUR_GAN_FOR_ZISHI: Record<TianGan, TianGan> = {
+  甲: '甲', 己: '甲',
+  乙: '丙', 庚: '丙',
+  丙: '戊', 辛: '戊',
+  丁: '庚', 壬: '庚',
+  戊: '壬', 癸: '壬',
+};
+
+// 十二長生: stage given day-master 天干 and target 地支. Yang stems run
+// forward through ZHI_ORDER starting from their 長生 branch; yin stems run
+// backward.
+const CHANGSHENG_STAGES = [
+  '長生', '沐浴', '冠帶', '臨官', '帝旺', '衰',
+  '病', '死', '墓', '絕', '胎', '養',
+];
+
+const CHANGSHENG_START: Record<TianGan, DiZhi> = {
+  甲: '亥', 乙: '午',
+  丙: '寅', 丁: '酉',
+  戊: '寅', 己: '酉',
+  庚: '巳', 辛: '子',
+  壬: '申', 癸: '卯',
+};
+
+export function computeXingyun(gan: TianGan, zhi: DiZhi): string {
+  const start = CHANGSHENG_START[gan];
+  if (!start) return '';
+  const startIdx = ZHI_ORDER.indexOf(start);
+  const targetIdx = ZHI_ORDER.indexOf(zhi);
+  if (startIdx < 0 || targetIdx < 0) return '';
+  const direction = TIAN_GAN[gan].yinyang === '陽' ? 1 : -1;
+  const stage = ((((targetIdx - startIdx) * direction) % 12) + 12) % 12;
+  return CHANGSHENG_STAGES[stage];
+}
+
 export function computeShishen(dayGan: TianGan, targetGan: TianGan): string {
   const d = TIAN_GAN[dayGan];
   const t = TIAN_GAN[targetGan];

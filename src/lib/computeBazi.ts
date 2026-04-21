@@ -4,10 +4,12 @@ import {
   TIAN_GAN,
   DI_ZHI,
   ELEMENT_TO_WUXING,
+  HOUR_GAN_FOR_ZISHI,
   LIFE_CYCLE_TO_CHINESE,
   WUXING_ORDER,
   computeShensha,
   computeShishen,
+  computeXingyun,
   nayinFor,
   kongwangFor,
   type TianGan,
@@ -216,9 +218,50 @@ function buildPillar(params: {
   };
 }
 
+function buildZiHourPillar(
+  dayGan: TianGan,
+  dayZhi: DiZhi,
+  yearZhi: DiZhi,
+  monthZhi: DiZhi,
+): Pillar {
+  const hourZhi: DiZhi = '子';
+  const hourGan = HOUR_GAN_FOR_ZISHI[dayGan];
+  const canggan = DI_ZHI[hourZhi]?.canggan ?? [];
+  const fuxing = canggan
+    .map(([g]) => computeShishen(dayGan, g))
+    .filter((v): v is string => Boolean(v));
+  return {
+    name: '時柱',
+    gan: hourGan,
+    zhi: hourZhi,
+    zhuxing: computeShishen(dayGan, hourGan),
+    fuxing,
+    canggan,
+    nayin: nayinFor(hourGan, hourZhi),
+    xingyun: computeXingyun(dayGan, hourZhi),
+    kongwang: kongwangFor(hourGan, hourZhi),
+    shensha: computeShensha({
+      dayGan,
+      dayZhi,
+      yearZhi,
+      monthZhi,
+      pillarGan: hourGan,
+      pillarZhi: hourZhi,
+      isDay: false,
+    }),
+  };
+}
+
 export function computeBazi(input: FormInput): BaziResult {
   const pad = (n: number) => String(n).padStart(2, '0');
-  const dateTimeString = `${input.year}-${pad(input.month)}-${pad(input.day)}T${pad(input.hour)}:${pad(input.minute)}:00`;
+  // Modern-calendar day boundary: 23:00–23:59 keeps day X's 日柱 (the underlying
+  // library uses the 早子 rule and would roll to day X+1 at 23:00). We feed the
+  // library 22:59 for this window, then rebuild the hour pillar below with
+  // 子 branch + 五鼠遁 stem derived from day X's 日干.
+  const useZiHourOverride = input.hour === 23;
+  const libHour = useZiHourOverride ? 22 : input.hour;
+  const libMinute = useZiHourOverride ? 59 : input.minute;
+  const dateTimeString = `${input.year}-${pad(input.month)}-${pad(input.day)}T${pad(libHour)}:${pad(libMinute)}:00`;
   const birthDate = toDate(dateTimeString, { timeZone: input.timezone });
 
   // NOTE: the underlying library operates on solar dates. Lunar support would
@@ -249,10 +292,12 @@ export function computeBazi(input: FormInput): BaziResult {
     name: '日柱', detailed: detailed?.day, isDay: true,
     dayGan, dayZhi, yearZhi, monthZhi,
   });
-  const hourPillar = buildPillar({
-    name: '時柱', detailed: detailed?.hour, isDay: false,
-    dayGan, dayZhi, yearZhi, monthZhi,
-  });
+  const hourPillar = useZiHourOverride
+    ? buildZiHourPillar(dayGan, dayZhi, yearZhi, monthZhi)
+    : buildPillar({
+        name: '時柱', detailed: detailed?.hour, isDay: false,
+        dayGan, dayZhi, yearZhi, monthZhi,
+      });
 
   // 五行分佈
   const five = (basic?.fiveFactors ?? {}) as Record<string, number>;
