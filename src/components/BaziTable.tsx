@@ -10,14 +10,15 @@ import {
   type TianGan,
   type DiZhi,
 } from '../data/baziConstants';
-import type { BaziResult, Pillar } from '../lib/computeBazi';
+import type { BaziResult, LuckColumn, Pillar } from '../lib/computeBazi';
 
 type PillarKey = 'hour' | 'day' | 'month' | 'year';
+type ColumnKey = PillarKey | 'dayun' | 'liunian';
 const PILLAR_ORDER: PillarKey[] = ['hour', 'day', 'month', 'year'];
 
 interface Selection {
   type: 'gan' | 'zhi';
-  pillar: PillarKey;
+  pillar: ColumnKey;
 }
 
 function GanCell({
@@ -200,7 +201,15 @@ function BaziTable({ data }: { data: BaziResult }) {
     ...data.pillars[key],
   }));
 
-  const toggle = (type: 'gan' | 'zhi', pillar: PillarKey) => {
+  const luck = data.currentLuck;
+  const luckCols: Array<{ key: 'dayun' | 'liunian' } & LuckColumn> = luck
+    ? [
+        { key: 'dayun', ...luck.dayun },
+        { key: 'liunian', ...luck.liunian },
+      ]
+    : [];
+
+  const toggle = (type: 'gan' | 'zhi', pillar: ColumnKey) => {
     setSelected((prev) =>
       prev && prev.type === type && prev.pillar === pillar
         ? null
@@ -208,10 +217,17 @@ function BaziTable({ data }: { data: BaziResult }) {
     );
   };
 
-  const isActive = (type: 'gan' | 'zhi', pillar: PillarKey) =>
+  const isActive = (type: 'gan' | 'zhi', pillar: ColumnKey) =>
     selected?.type === type && selected.pillar === pillar;
 
-  const selectedPillar = selected ? data.pillars[selected.pillar] : null;
+  const selectedColumn: { name: string; gan: TianGan; zhi: DiZhi; zhuxing: string; xingyun: string; shensha: string[] } | null =
+    selected === null
+      ? null
+      : selected.pillar === 'dayun' || selected.pillar === 'liunian'
+        ? luck
+          ? luck[selected.pillar]
+          : null
+        : data.pillars[selected.pillar];
 
   return (
     <>
@@ -224,6 +240,13 @@ function BaziTable({ data }: { data: BaziResult }) {
               {pillars.map((p) => (
                 <th key={p.key}>{p.name}</th>
               ))}
+              {luckCols.map((c) => (
+                <th key={c.key} className="luck-head">
+                  <div>{c.name}</div>
+                  <div className="luck-sub">{c.label}</div>
+                  <div className="luck-sub">{c.subLabel}</div>
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -231,6 +254,9 @@ function BaziTable({ data }: { data: BaziResult }) {
               <td className="row-label">主星</td>
               {pillars.map((p) => (
                 <td key={p.key}>{p.zhuxing || <span className="muted-cell">—</span>}</td>
+              ))}
+              {luckCols.map((c) => (
+                <td key={c.key} className="luck-col">{c.zhuxing || <span className="muted-cell">—</span>}</td>
               ))}
             </tr>
             <tr className="shade">
@@ -241,6 +267,14 @@ function BaziTable({ data }: { data: BaziResult }) {
                   gan={p.gan}
                   active={isActive('gan', p.key)}
                   onClick={() => toggle('gan', p.key)}
+                />
+              ))}
+              {luckCols.map((c) => (
+                <GanCell
+                  key={c.key}
+                  gan={c.gan}
+                  active={isActive('gan', c.key)}
+                  onClick={() => toggle('gan', c.key)}
                 />
               ))}
             </tr>
@@ -254,11 +288,36 @@ function BaziTable({ data }: { data: BaziResult }) {
                   onClick={() => toggle('zhi', p.key)}
                 />
               ))}
+              {luckCols.map((c) => (
+                <ZhiCell
+                  key={c.key}
+                  zhi={c.zhi}
+                  active={isActive('zhi', c.key)}
+                  onClick={() => toggle('zhi', c.key)}
+                />
+              ))}
             </tr>
             <tr className="shade">
               <td className="row-label">藏干</td>
               {pillars.map((p) => (
                 <CangGanCell key={p.key} pillar={p} />
+              ))}
+              {luckCols.map((c) => (
+                <CangGanCell
+                  key={c.key}
+                  pillar={{
+                    name: c.name,
+                    gan: c.gan,
+                    zhi: c.zhi,
+                    zhuxing: c.zhuxing,
+                    fuxing: c.fuxing,
+                    canggan: DI_ZHI[c.zhi]?.canggan ?? [],
+                    nayin: '',
+                    xingyun: c.xingyun,
+                    kongwang: c.kongwang,
+                    shensha: c.shensha,
+                  }}
+                />
               ))}
             </tr>
             <tr>
@@ -270,11 +329,21 @@ function BaziTable({ data }: { data: BaziResult }) {
                     : <span className="muted-cell">—</span>}
                 </td>
               ))}
+              {luckCols.map((c) => (
+                <td key={c.key} className="fuxing-cell luck-col">
+                  {c.fuxing.length
+                    ? c.fuxing.map((s, i) => <div key={i}>{s}</div>)
+                    : <span className="muted-cell">—</span>}
+                </td>
+              ))}
             </tr>
             <tr className="shade">
               <td className="row-label">納音</td>
               {pillars.map((p) => (
                 <td key={p.key}>{p.nayin || <span className="muted-cell">—</span>}</td>
+              ))}
+              {luckCols.map((c) => (
+                <td key={c.key} className="luck-col">—</td>
               ))}
             </tr>
             <tr>
@@ -282,11 +351,17 @@ function BaziTable({ data }: { data: BaziResult }) {
               {pillars.map((p) => (
                 <td key={p.key}>{p.xingyun || <span className="muted-cell">—</span>}</td>
               ))}
+              {luckCols.map((c) => (
+                <td key={c.key} className="luck-col">{c.xingyun || <span className="muted-cell">—</span>}</td>
+              ))}
             </tr>
             <tr className="shade">
               <td className="row-label">空亡</td>
               {pillars.map((p) => (
                 <td key={p.key}>{p.kongwang || <span className="muted-cell">—</span>}</td>
+              ))}
+              {luckCols.map((c) => (
+                <td key={c.key} className="luck-col">{c.kongwang || <span className="muted-cell">—</span>}</td>
               ))}
             </tr>
             <tr>
@@ -298,24 +373,31 @@ function BaziTable({ data }: { data: BaziResult }) {
                     : <span className="muted-cell">—</span>}
                 </td>
               ))}
+              {luckCols.map((c) => (
+                <td key={c.key} className="shensha-cell luck-col">
+                  {c.shensha.length
+                    ? c.shensha.map((s, i) => <div key={i}>{s}</div>)
+                    : <span className="muted-cell">—</span>}
+                </td>
+              ))}
             </tr>
           </tbody>
         </table>
       </div>
 
-      {selected && selectedPillar && selected.type === 'gan' && (
+      {selected && selectedColumn && selected.type === 'gan' && (
         <GanExplanation
-          gan={selectedPillar.gan}
-          pillarName={selectedPillar.name}
-          shishen={selectedPillar.zhuxing}
+          gan={selectedColumn.gan}
+          pillarName={selectedColumn.name}
+          shishen={selectedColumn.zhuxing}
         />
       )}
-      {selected && selectedPillar && selected.type === 'zhi' && (
+      {selected && selectedColumn && selected.type === 'zhi' && (
         <ZhiExplanation
-          zhi={selectedPillar.zhi}
-          pillarName={selectedPillar.name}
-          xingyun={selectedPillar.xingyun}
-          shensha={selectedPillar.shensha}
+          zhi={selectedColumn.zhi}
+          pillarName={selectedColumn.name}
+          xingyun={selectedColumn.xingyun}
+          shensha={selectedColumn.shensha}
         />
       )}
     </>

@@ -4,10 +4,12 @@ import {
   TIAN_GAN,
   DI_ZHI,
   ELEMENT_TO_WUXING,
+  GAN_ORDER,
   HOUR_GAN_FOR_ZISHI,
   LIFE_CYCLE_TO_CHINESE,
   RIZHU_PERSONALITY,
   WUXING_ORDER,
+  ZHI_ORDER,
   computeShensha,
   computeShishen,
   computeXingyun,
@@ -70,6 +72,24 @@ export interface DayunEntry {
   year: number;
 }
 
+export interface LuckColumn {
+  name: string;
+  label: string;
+  subLabel: string;
+  gan: TianGan;
+  zhi: DiZhi;
+  zhuxing: string;
+  fuxing: string[];
+  xingyun: string;
+  kongwang: string;
+  shensha: string[];
+}
+
+export interface CurrentLuck {
+  dayun: LuckColumn;
+  liunian: LuckColumn;
+}
+
 export interface BaziResult {
   input: FormInput;
   pillars: {
@@ -83,6 +103,7 @@ export interface BaziResult {
   strength: StrengthInfo;
   overview: string;
   dayun: DayunEntry[];
+  currentLuck: CurrentLuck | null;
 }
 
 const STRENGTH_LEVEL: Record<string, string> = {
@@ -318,6 +339,52 @@ function buildPillar(params: {
   };
 }
 
+function ganZhiForYear(year: number): { gan: TianGan; zhi: DiZhi } {
+  // 1984 = 甲子 (index 0 for both cycles).
+  const offset = year - 1984;
+  const ganIdx = ((offset % 10) + 10) % 10;
+  const zhiIdx = ((offset % 12) + 12) % 12;
+  return { gan: GAN_ORDER[ganIdx], zhi: ZHI_ORDER[zhiIdx] };
+}
+
+function buildLuckColumn(params: {
+  name: string;
+  label: string;
+  subLabel: string;
+  gan: TianGan;
+  zhi: DiZhi;
+  dayGan: TianGan;
+  dayZhi: DiZhi;
+  yearZhi: DiZhi;
+  monthZhi: DiZhi;
+}): LuckColumn {
+  const { name, label, subLabel, gan, zhi, dayGan, dayZhi, yearZhi, monthZhi } = params;
+  const canggan = DI_ZHI[zhi]?.canggan ?? [];
+  const fuxing = canggan
+    .map(([g]) => computeShishen(dayGan, g))
+    .filter((v): v is string => Boolean(v));
+  return {
+    name,
+    label,
+    subLabel,
+    gan,
+    zhi,
+    zhuxing: computeShishen(dayGan, gan),
+    fuxing,
+    xingyun: computeXingyun(dayGan, zhi),
+    kongwang: kongwangFor(gan, zhi),
+    shensha: computeShensha({
+      dayGan,
+      dayZhi,
+      yearZhi,
+      monthZhi,
+      pillarGan: gan,
+      pillarZhi: zhi,
+      isDay: false,
+    }),
+  };
+}
+
 function buildZiHourPillar(
   dayGan: TianGan,
   dayZhi: DiZhi,
@@ -465,6 +532,40 @@ export function computeBazi(input: FormInput): BaziResult {
       };
     });
 
+  // 當前大運/流年
+  const currentYear = new Date().getFullYear();
+  const currentDayun = [...dayun]
+    .reverse()
+    .find((d) => currentYear >= d.year);
+  const liunianGZ = ganZhiForYear(currentYear);
+  const liunianAge = currentYear - input.year + 1;
+  const currentLuck: CurrentLuck | null = currentDayun
+    ? {
+        dayun: buildLuckColumn({
+          name: '大運',
+          label: `${currentDayun.age}歲`,
+          subLabel: String(currentDayun.year),
+          gan: currentDayun.gan,
+          zhi: currentDayun.zhi,
+          dayGan,
+          dayZhi,
+          yearZhi,
+          monthZhi,
+        }),
+        liunian: buildLuckColumn({
+          name: '流年',
+          label: `${liunianAge}歲`,
+          subLabel: String(currentYear),
+          gan: liunianGZ.gan,
+          zhi: liunianGZ.zhi,
+          dayGan,
+          dayZhi,
+          yearZhi,
+          monthZhi,
+        }),
+      }
+    : null;
+
   return {
     input,
     pillars: {
@@ -488,6 +589,7 @@ export function computeBazi(input: FormInput): BaziResult {
     },
     overview: RIZHU_PERSONALITY[dayGan] ?? '',
     dayun,
+    currentLuck,
   };
 }
 
