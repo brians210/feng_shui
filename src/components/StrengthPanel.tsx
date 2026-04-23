@@ -1,4 +1,4 @@
-import { WUXING_COLORS, WUXING_CLASS } from '../data/baziConstants';
+import { WUXING_CLASS } from '../data/baziConstants';
 import type { Rizhu, StrengthInfo } from '../lib/computeBazi';
 
 interface StrengthPanelProps {
@@ -34,37 +34,6 @@ function StrengthPanel({ strength, rizhu }: StrengthPanelProps) {
           <span>中和</span>
           <span>偏強</span>
           <span>極旺</span>
-        </div>
-      </div>
-
-      <div className="strength-summary">{strength.summary}</div>
-
-      <div className="favor-row">
-        <div className="f-item">
-          <span className="lbl">喜用</span>
-          {strength.favorable.length === 0 && (
-            <span style={{ color: 'var(--ink-muted)' }}>—</span>
-          )}
-          {strength.favorable.map((k) => (
-            <span key={k} className="chip" style={{ background: WUXING_COLORS[k] }}>
-              {k}
-            </span>
-          ))}
-        </div>
-        <div className="f-item">
-          <span className="lbl">忌神</span>
-          {strength.unfavorable.length === 0 && (
-            <span style={{ color: 'var(--ink-muted)' }}>—</span>
-          )}
-          {strength.unfavorable.map((k) => (
-            <span
-              key={k}
-              className="chip"
-              style={{ background: WUXING_COLORS[k], opacity: 0.55 }}
-            >
-              {k}
-            </span>
-          ))}
         </div>
       </div>
     </div>
