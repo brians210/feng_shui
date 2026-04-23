@@ -6,6 +6,7 @@ import {
   ELEMENT_TO_WUXING,
   HOUR_GAN_FOR_ZISHI,
   LIFE_CYCLE_TO_CHINESE,
+  RIZHU_PERSONALITY,
   WUXING_ORDER,
   computeShensha,
   computeShishen,
@@ -252,27 +253,6 @@ function buildStrengthSummary(p: {
   return `日主${dayGan}${rizhuWuxing}，${monthDesc}。${leveling}${extremes}整體喜${favStr}，忌${unfStr}。`;
 }
 
-function composeOverview(
-  rizhuGan: TianGan,
-  rizhuWuxing: Wuxing,
-  monthZhi: DiZhi,
-  level: string,
-  favorable: Wuxing[],
-  unfavorable: Wuxing[],
-): string {
-  const favStr = favorable.length ? favorable.join('、') : '五行調和';
-  const unfStr = unfavorable.length ? unfavorable.join('、') : '無明顯忌神';
-  const monthWuxing = DI_ZHI[monthZhi]?.wuxing ?? '';
-  const monthPart = monthWuxing ? `月令${monthZhi}（${monthWuxing}）` : `月令${monthZhi}`;
-  const body =
-    level === '身弱'
-      ? `日主氣勢偏弱，喜${favStr}扶身助旺，忌${unfStr}再行耗洩。`
-      : level === '身強'
-        ? `日主氣勢旺盛，喜${favStr}疏洩調候，忌${unfStr}過盛助旺。`
-        : `日主五行得位，喜${favStr}為用，忌${unfStr}過重。`;
-  return `日主${rizhuGan}${rizhuWuxing}，生於${monthPart}當令之時。${body}整體格局以調候扶抑為要，參酌大運流年之氣勢，趨吉避凶，知命修身。`;
-}
-
 function buildPillar(params: {
   name: string;
   detailed: any;
@@ -506,14 +486,7 @@ export function computeBazi(input: FormInput): BaziResult {
       favorable,
       unfavorable,
     },
-    overview: composeOverview(
-      dayGan,
-      ganInfo?.wuxing ?? '木',
-      monthZhi,
-      level,
-      favorable,
-      unfavorable,
-    ),
+    overview: RIZHU_PERSONALITY[dayGan] ?? '',
     dayun,
   };
 }
