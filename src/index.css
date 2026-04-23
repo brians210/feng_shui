@@ -368,6 +368,7 @@ body {
 .w-tu { color: var(--w-tu); }
 .w-jin { color: var(--w-jin); }
 .w-shui { color: var(--w-shui); }
+.w-tu-earth { color: #6b4423; }
 
 .canggan-cell {
   padding: 8px 6px;

@@ -35,6 +35,16 @@ export const WUXING_CLASS: Record<Wuxing, string> = {
   水: 'w-shui',
 };
 
+// 四墓庫 — 辰未丑戌 are 土 branches but rendered in brown to distinguish
+// from 火 branches at a glance.
+const EARTH_BRANCHES: Set<DiZhi> = new Set(['辰', '未', '丑', '戌']);
+
+export function zhiColorClass(zhi: DiZhi): string {
+  if (EARTH_BRANCHES.has(zhi)) return 'w-tu-earth';
+  const info = DI_ZHI[zhi];
+  return info ? WUXING_CLASS[info.wuxing] : '';
+}
+
 export const TIAN_GAN: Record<TianGan, GanInfo> = {
   甲: { wuxing: '木', yinyang: '陽', color: WUXING_COLORS.木 },
   乙: { wuxing: '木', yinyang: '陰', color: WUXING_COLORS.木 },

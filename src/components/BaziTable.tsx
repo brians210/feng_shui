@@ -6,6 +6,7 @@ import {
   SHISHEN_DESC,
   CHANGSHENG_DESC,
   SHENSHA_DESC,
+  zhiColorClass,
   type TianGan,
   type DiZhi,
 } from '../data/baziConstants';
@@ -49,8 +50,7 @@ function ZhiCell({
   active: boolean;
   onClick: () => void;
 }) {
-  const info = DI_ZHI[zhi];
-  const cls = info ? WUXING_CLASS[info.wuxing] : '';
+  const cls = zhiColorClass(zhi);
   return (
     <td
       className={`zhi-cell ${cls} ${active ? 'active' : ''}`}
@@ -136,7 +136,7 @@ function ZhiExplanation({
   shensha: string[];
 }) {
   const info = DI_ZHI[zhi];
-  const cls = WUXING_CLASS[info.wuxing];
+  const cls = zhiColorClass(zhi);
   return (
     <div className="explanation">
       <h4>

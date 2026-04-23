@@ -1,4 +1,4 @@
-import { TIAN_GAN, DI_ZHI, WUXING_CLASS } from '../data/baziConstants';
+import { TIAN_GAN, WUXING_CLASS, zhiColorClass } from '../data/baziConstants';
 import type { DayunEntry } from '../lib/computeBazi';
 
 interface DayunTableProps {
@@ -8,7 +8,7 @@ interface DayunTableProps {
 function DayunTable({ dayun }: DayunTableProps) {
   if (!dayun.length) {
     return (
-      <div className="dayun-table-wrap" style={{ padding: '24px', background: '#fbf8f0' }}>
+      <div className="dayun-table-wrap" style={{ padding: '24px', background: '#fafaf9' }}>
         <div style={{ textAlign: 'center', color: 'var(--ink-muted)', fontFamily: 'var(--serif)' }}>
           暫無大運資料
         </div>
@@ -54,15 +54,11 @@ function DayunTable({ dayun }: DayunTableProps) {
           </tr>
           <tr>
             <td className="row-label">地支</td>
-            {dayun.map((d, i) => {
-              const info = DI_ZHI[d.zhi];
-              const cls = info ? WUXING_CLASS[info.wuxing] : '';
-              return (
-                <td key={i} className={`du-zhi ${cls}`}>
-                  {d.zhi}
-                </td>
-              );
-            })}
+            {dayun.map((d, i) => (
+              <td key={i} className={`du-zhi ${zhiColorClass(d.zhi)}`}>
+                {d.zhi}
+              </td>
+            ))}
           </tr>
         </tbody>
       </table>
