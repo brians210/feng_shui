@@ -5,6 +5,8 @@
 const { TIAN_GAN, DI_ZHI, WUXING_COLORS, SHISHEN_DESC, CHANGSHENG_DESC, SHENSHA_DESC } = window.BaziConstants;
 
 const WX_CLASS = { '木': 'w-mu', '火': 'w-huo', '土': 'w-tu', '金': 'w-jin', '水': 'w-shui' };
+const EARTH_BRANCHES = new Set(['辰', '未', '丑', '戌']);
+const zhiColorClass = (zhi) => EARTH_BRANCHES.has(zhi) ? 'w-tu-earth' : WX_CLASS[DI_ZHI[zhi].wuxing];
 
 function GanChar({ gan, isRizhu, active, onClick }) {
   const info = TIAN_GAN[gan];
@@ -16,9 +18,8 @@ function GanChar({ gan, isRizhu, active, onClick }) {
 }
 
 function ZhiChar({ zhi, active, onClick }) {
-  const info = DI_ZHI[zhi];
   return (
-    <td className={`zhi-cell ${WX_CLASS[info.wuxing]} ${active ? 'active' : ''}`} onClick={onClick}>
+    <td className={`zhi-cell ${zhiColorClass(zhi)} ${active ? 'active' : ''}`} onClick={onClick}>
       {zhi}
     </td>
   );
@@ -76,14 +77,15 @@ function GanExplanation({ gan, pillarName, shishen }) {
 
 function ZhiExplanation({ zhi, pillarName, xingyun, shensha }) {
   const info = DI_ZHI[zhi];
+  const colorCls = zhiColorClass(zhi);
   return (
     <div className="explanation">
       <h4>
         <span className="tag">{pillarName}地支</span>
-        <span className={WX_CLASS[info.wuxing]} style={{fontSize: 24}}>{zhi}</span>
+        <span className={colorCls} style={{fontSize: 24}}>{zhi}</span>
       </h4>
       <div className="attrs">
-        <div className="kv"><span className="k">五行</span><span className={WX_CLASS[info.wuxing]}><b>{info.wuxing}</b></span></div>
+        <div className="kv"><span className="k">五行</span><span className={colorCls}><b>{info.wuxing}</b></span></div>
         <div className="kv"><span className="k">生肖</span><b>{info.zodiac}</b></div>
         <div className="kv"><span className="k">藏干</span><b>{info.canggan.map(c => c[0]).join('、')}</b></div>
         {xingyun && <div className="kv"><span className="k">星運</span><b>{xingyun}</b></div>}
@@ -111,17 +113,24 @@ function ZhiExplanation({ zhi, pillarName, xingyun, shensha }) {
 }
 
 function BaziTable({ data }) {
-  const [selected, setSelected] = React.useState(null); // {type: 'gan'|'zhi', pillar: 'year'|'month'|'day'|'hour'}
+  const [selected, setSelected] = React.useState(null);
 
-  const pillarOrder = ['hour', 'day', 'month', 'year']; // 時/日/月/年 — matches the reference image order
+  const pillarOrder = ['hour', 'day', 'month', 'year'];
   const pillars = pillarOrder.map(k => ({ key: k, ...data.pillars[k] }));
+
+  const luck = data.currentLuck || null;
+  const luckCols = luck ? [
+    { key: 'dayun', ...luck.dayun },
+    { key: 'liunian', ...luck.liunian },
+  ] : [];
+  const allPillarMap = { ...data.pillars, ...(luck || {}) };
 
   const toggle = (type, pillar) => {
     if (selected && selected.type === type && selected.pillar === pillar) setSelected(null);
     else setSelected({ type, pillar });
   };
 
-  const selPillar = selected ? data.pillars[selected.pillar] : null;
+  const selPillar = selected ? allPillarMap[selected.pillar] : null;
 
   return (
     <>
@@ -131,59 +140,76 @@ function BaziTable({ data }) {
             <tr>
               <th>日期</th>
               {pillars.map(p => <th key={p.key}>{p.name}</th>)}
+              {luckCols.map(c => (
+                <th key={c.key} className="luck-head">
+                  <div>{c.name}</div>
+                  <div className="luck-sub">{c.label}</div>
+                  <div className="luck-sub">{c.subLabel}</div>
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
             <tr>
               <td className="row-label">主星</td>
               {pillars.map(p => <td key={p.key}>{p.zhuxing}</td>)}
+              {luckCols.map(c => <td key={c.key} className="luck-col">{c.zhuxing}</td>)}
             </tr>
             <tr className="shade">
               <td className="row-label">天干</td>
               {pillars.map(p => (
-                <GanChar
-                  key={p.key}
-                  gan={p.gan}
-                  isRizhu={p.key === 'day'}
+                <GanChar key={p.key} gan={p.gan} isRizhu={p.key === 'day'}
                   active={selected && selected.type === 'gan' && selected.pillar === p.key}
-                  onClick={() => toggle('gan', p.key)}
-                />
+                  onClick={() => toggle('gan', p.key)} />
+              ))}
+              {luckCols.map(c => (
+                <GanChar key={c.key} gan={c.gan}
+                  active={selected && selected.type === 'gan' && selected.pillar === c.key}
+                  onClick={() => toggle('gan', c.key)} />
               ))}
             </tr>
             <tr>
               <td className="row-label">地支</td>
               {pillars.map(p => (
-                <ZhiChar
-                  key={p.key}
-                  zhi={p.zhi}
+                <ZhiChar key={p.key} zhi={p.zhi}
                   active={selected && selected.type === 'zhi' && selected.pillar === p.key}
-                  onClick={() => toggle('zhi', p.key)}
-                />
+                  onClick={() => toggle('zhi', p.key)} />
+              ))}
+              {luckCols.map(c => (
+                <ZhiChar key={c.key} zhi={c.zhi}
+                  active={selected && selected.type === 'zhi' && selected.pillar === c.key}
+                  onClick={() => toggle('zhi', c.key)} />
               ))}
             </tr>
             <tr className="shade">
               <td className="row-label">藏干</td>
               {pillars.map(p => <CangGanCell key={p.key} zhi={p.zhi} />)}
+              {luckCols.map(c => <CangGanCell key={c.key} zhi={c.zhi} />)}
             </tr>
             <tr>
               <td className="row-label">副星</td>
               {pillars.map(p => <FuxingCell key={p.key} list={p.fuxing} />)}
+              {luckCols.map(c => <FuxingCell key={c.key} list={c.fuxing || []} />)}
             </tr>
             <tr className="shade">
               <td className="row-label">納音</td>
               {pillars.map(p => <td key={p.key}>{p.nayin}</td>)}
+              {luckCols.map(c => <td key={c.key} className="luck-col">—</td>)}
             </tr>
             <tr>
               <td className="row-label">星運</td>
               {pillars.map(p => <td key={p.key}>{p.xingyun}</td>)}
+              {luckCols.map(c => <td key={c.key} className="luck-col">{c.xingyun}</td>)}
             </tr>
             <tr className="shade">
               <td className="row-label">空亡</td>
               {pillars.map(p => <td key={p.key}>{p.kongwang}</td>)}
+              {luckCols.map(c => <td key={c.key} className="luck-col">{c.kongwang || '—'}</td>)}
             </tr>
             <tr>
               <td className="row-label">神煞</td>
               {pillars.map(p => <ShenshaCell key={p.key} list={p.shensha} />)}
+              {luckCols.map(c => <ShenshaCell key={c.key} list={c.shensha || []} />)}
             </tr>
           </tbody>
         </table>

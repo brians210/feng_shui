@@ -117,23 +117,6 @@ function StrengthPanel({ strength, rizhu }) {
           <span>極弱</span><span>偏弱</span><span>中和</span><span>偏強</span><span>極旺</span>
         </div>
       </div>
-
-      <div className="strength-summary">{strength.summary}</div>
-
-      <div className="favor-row">
-        <div className="f-item">
-          <span className="lbl">喜用</span>
-          {strength.favorable.map(k => (
-            <span key={k} className="chip" style={{background: WC[k]}}>{k}</span>
-          ))}
-        </div>
-        <div className="f-item">
-          <span className="lbl">忌神</span>
-          {strength.unfavorable.map(k => (
-            <span key={k} className="chip" style={{background: WC[k], opacity: 0.55}}>{k}</span>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
@@ -170,7 +153,7 @@ function DayunTable({ dayun }) {
           <tr>
             <td className="row-label" style={{background: '#ada397', color: 'var(--table-text)'}}>地支</td>
             {dayun.map(d => (
-              <td key={d.age} className={`du-zhi ${WX_CLASS_MAP[DZ[d.zhi].wuxing]}`}>{d.zhi}</td>
+              <td key={d.age} className={`du-zhi ${zhiCls(d.zhi)}`}>{d.zhi}</td>
             ))}
           </tr>
         </tbody>
@@ -179,6 +162,8 @@ function DayunTable({ dayun }) {
   );
 }
 const WX_CLASS_MAP = { '木': 'w-mu', '火': 'w-huo', '土': 'w-tu', '金': 'w-jin', '水': 'w-shui' };
+const EARTH_BRANCHES_DU = new Set(['辰', '未', '丑', '戌']);
+const zhiCls = (z) => EARTH_BRANCHES_DU.has(z) ? 'w-tu-earth' : WX_CLASS_MAP[DZ[z].wuxing];
 
 Object.assign(window, { WuxingChart, StrengthPanel, OverviewCard, DayunTable });
 })();

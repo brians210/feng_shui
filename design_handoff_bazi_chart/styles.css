@@ -5,20 +5,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap');
 
 :root {
-  --paper: #f5f1e8;
-  --paper-dark: #e8e0cd;
+  --paper: #f2f2f0;
+  --paper-dark: #e2e2df;
   --ink: #1a1614;
   --ink-soft: #3d3631;
   --ink-muted: #7a6f64;
-  --border: #c4b8a0;
-  --border-soft: #d9cfb8;
+  --border: #c9c9c6;
+  --border-soft: #dcdcd9;
   --accent-red: #b33a2c;
   --accent-seal: #c1392b;
 
-  --table-bg: #948a7e;
+  --table-bg: #ededea;
   --table-header: #3d3631;
-  --table-row-alt: #ada397;
-  --table-stripe: #b8aea0;
+  --table-row-alt: #e2e2df;
+  --table-stripe: #e8e8e5;
   --table-text: #2a2420;
   --table-text-light: #f5f1e8;
 
@@ -47,9 +47,9 @@ html, body {
 /* subtle paper texture */
 body {
   background-image:
-    radial-gradient(circle at 20% 30%, rgba(180,155,100,0.06) 0px, transparent 40%),
-    radial-gradient(circle at 70% 80%, rgba(180,120,60,0.05) 0px, transparent 50%),
-    repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(120,90,50,0.012) 2px, rgba(120,90,50,0.012) 4px);
+    radial-gradient(circle at 20% 30%, rgba(60,60,60,0.04) 0px, transparent 40%),
+    radial-gradient(circle at 70% 80%, rgba(60,60,60,0.03) 0px, transparent 50%),
+    repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(60,60,60,0.012) 2px, rgba(60,60,60,0.012) 4px);
 }
 
 .app {
@@ -99,7 +99,7 @@ body {
 
 /* ---------- Form card ---------- */
 .form-card {
-  background: #fbf8f0;
+  background: #fafaf9;
   border: 1px solid var(--border);
   border-radius: 2px;
   padding: 24px 28px;
@@ -250,7 +250,7 @@ body {
   flex-wrap: wrap;
   gap: 20px 36px;
   padding: 16px 20px;
-  background: #fbf8f0;
+  background: #fafaf9;
   border: 1px solid var(--border-soft);
   border-left: 3px solid var(--accent-red);
   border-radius: 2px;
@@ -274,7 +274,7 @@ body {
 
 /* ---------- Main table — mimics the reference screenshot ---------- */
 .bazi-table-wrap {
-  border: 1px solid var(--table-header);
+  border: 1px solid #bfbfbc;
   background: var(--table-bg);
   overflow: hidden;
   border-radius: 2px;
@@ -287,7 +287,7 @@ body {
   color: var(--table-text);
 }
 .bazi-table th, .bazi-table td {
-  border: 1px solid #6a6055;
+  border: 1px solid #c9c9c6;
   padding: 6px 8px;
   text-align: center;
   vertical-align: middle;
@@ -327,10 +327,10 @@ body {
   transition: background 0.15s;
 }
 .bazi-table .gan-cell:hover, .bazi-table .zhi-cell:hover {
-  background: rgba(255,255,255,0.15);
+  background: rgba(0,0,0,0.04);
 }
 .bazi-table .gan-cell.active, .bazi-table .zhi-cell.active {
-  background: rgba(255, 241, 224, 0.35);
+  background: rgba(179,58,44,0.06);
   outline: 2px solid var(--accent-red);
   outline-offset: -4px;
 }
@@ -341,6 +341,28 @@ body {
 .w-tu   { color: var(--w-tu); }
 .w-jin  { color: var(--w-jin); }
 .w-shui { color: var(--w-shui); }
+.w-tu-earth { color: #6b4423; }  /* 辰未丑戌 — 四墓庫，啡色 */
+
+/* luck columns (大運/流年) */
+.bazi-table thead th.luck-head {
+  background: #2a2420;
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 6px 6px;
+}
+.bazi-table thead th.luck-head .luck-sub {
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  opacity: 0.8;
+  font-weight: 400;
+  padding-left: 0;
+}
+.bazi-table td.luck-col {
+  background: #f5f5f2;
+}
+.bazi-table tr.shade td.luck-col {
+  background: #efefec;
+}
 
 /* day-master seal mark */
 .rizhu-seal {
@@ -385,7 +407,7 @@ body {
 /* ---------- Explanation pop-in ---------- */
 .explanation {
   margin-top: 12px;
-  background: #fbf8f0;
+  background: #fafaf9;
   border: 1px solid var(--border-soft);
   border-left: 3px solid var(--accent-red);
   padding: 16px 20px;
@@ -438,7 +460,7 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
-  background: #fbf8f0;
+  background: #fafaf9;
   border: 1px solid var(--border-soft);
   padding: 24px;
   border-radius: 2px;
@@ -493,7 +515,7 @@ body {
 
 /* ---------- Strength panel ---------- */
 .strength-panel {
-  background: #fbf8f0;
+  background: #fafaf9;
   border: 1px solid var(--border-soft);
   padding: 24px;
   border-radius: 2px;
@@ -515,7 +537,7 @@ body {
   font-weight: 900;
   border: 2px solid var(--accent-seal);
   border-radius: 50%;
-  background: #fff1e0;
+  background: #fafaf9;
 }
 .strength-top .level-block {
   display: flex;
@@ -602,7 +624,7 @@ body {
 
 /* ---------- Overview ---------- */
 .overview-card {
-  background: #fbf8f0;
+  background: #fafaf9;
   border: 1px solid var(--border-soft);
   padding: 26px 28px;
   border-radius: 2px;
@@ -628,7 +650,7 @@ body {
 /* ---------- Dayun table ---------- */
 .dayun-table-wrap {
   overflow-x: auto;
-  border: 1px solid var(--table-header);
+  border: 1px solid #bfbfbc;
   border-radius: 2px;
   background: var(--table-bg);
 }
@@ -639,7 +661,7 @@ body {
   min-width: 640px;
 }
 .dayun-table th, .dayun-table td {
-  border: 1px solid #6a6055;
+  border: 1px solid #c9c9c6;
   padding: 8px 6px;
   text-align: center;
   font-size: 13px;

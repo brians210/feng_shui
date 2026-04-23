@@ -1,7 +1,224 @@
 # Handoff: 八字排盤網頁 (Bazi Chart / Four Pillars)
 
 ## Overview
-一個讓用戶輸入出生年月日時後，生成傳統中式八字命盤的網頁。包含四柱主表、五行分佈、日主強弱分析、命格概述、大運表等模組。整體視覺貼近傳統灰底命盤表格的風格。
+一個讓用戶輸入出生年月日時後，生成傳統中式八字命盤的網頁。包含四柱主表（含大運、流年 column）、五行分佈、日主強弱（儀表）、命格概述、大運表等模組。
+
+**最新更新 (2026-04)**：
+- 背景改為灰白色調
+- 辰/未/丑/戌 四墓庫地支顯示為啡色
+- 四柱八字表新增 大運 + 流年 兩個 column
+- 日主強弱面板移除文字摘要與喜用/忌神（只保留儀表指針）
+
+## About the Design Files
+This bundle contains **HTML design references** — a working prototype showing the intended look, layout, and interactions. It is **not production code to copy directly**. Recreate in the target codebase's existing environment using that codebase's established patterns.
+
+## Fidelity
+**High-fidelity** — colors, typography, spacing, and interactions are finalized.
+
+## Design Tokens
+
+```css
+/* Paper / ink — grey-white palette */
+--paper:        #f2f2f0;
+--paper-dark:   #e2e2df;
+--ink:          #1a1614;
+--ink-soft:     #3d3631;
+--ink-muted:    #7a6f64;
+--border:       #c9c9c6;
+--border-soft:  #dcdcd9;
+
+/* Accent */
+--accent-red:   #b33a2c;
+--accent-seal:  #c1392b;
+
+/* Table (grey-white) */
+--table-bg:     #ededea;
+--table-header: #3d3631;
+--table-row-alt:#e2e2df;
+--table-stripe: #e8e8e5;
+
+/* Five elements */
+--w-mu:   #2f8f3e;   /* 木 green */
+--w-huo:  #d94a3d;   /* 火 red */
+--w-tu:   #c98a2b;   /* 土 ochre */
+--w-jin:  #d97806;   /* 金 orange */
+--w-shui: #1f5f8f;   /* 水 blue */
+
+/* 四墓庫地支 (辰未丑戌) — brown */
+--w-tu-earth: #6b4423;
+
+/* Luck columns */
+--luck-col-bg:      #f5f5f2;
+--luck-col-shade:   #efefec;
+--luck-head-bg:     #2a2420;
+
+/* Type */
+--serif: 'Noto Serif TC', 'PingFang TC', 'Songti TC', serif;
+--sans:  'Noto Sans TC', 'PingFang TC', sans-serif;
+```
+
+## Screens / Views
+
+Single-page layout (max-width 980px, centered). Sections stack vertically.
+
+### 1. Masthead
+Title `八 字 命 盤` (Noto Serif TC 900, 44px, letter-spacing 0.35em) + red seal badge `排盤` + subtitle `四柱八字 · 十神神煞 · 五行喜忌 · 大運流年`.
+
+### 2. BirthForm
+Cream-white card with 1px border. Fields:
+- 姓名 (optional text input, full width)
+- 性別 toggle: 乾造（男）/ 坤造（女）
+- 曆法 toggle: 陽曆 / 農曆
+- Row of 5 selects: 年 / 月 / 日 / 時 / 分
+- Submit `起 盤` (accent-red, right-aligned)
+
+### 3. 命主資訊 — Person card
+Grey-white card with left border 3px accent-red. Flex row: 姓名 / 性別 / 出生 / 日主.
+
+### 4. 四柱八字 — Main Bazi table ★
+Centerpiece. Grey-white aesthetic.
+
+**Column order**: 日期 | 時柱 | 日柱 | 月柱 | 年柱 | **大運** | **流年**
+
+**Luck columns** (大運 / 流年):
+- Dark header bg `#2a2420`, showing column name + age label + year (e.g. `大運 / 33歲 / 2022`)
+- Body cells have subtly different bg (`#f5f5f2` / `#efefec` stripe)
+- Show same rows as main pillars: 主星, 天干, 地支, 藏干, 副星, 星運, 空亡, 神煞
+- 納音 row shows `—` for luck columns (not applicable)
+
+**Rows** (all columns):
+| Row | Content |
+|---|---|
+| 主星 | 十神 (e.g. 劫財, 正官), day pillar shows `日主` |
+| 天干 | 38px serif char, wuxing-colored, clickable |
+| 地支 | 38px serif char, wuxing-colored (辰未丑戌 use brown `#6b4423`), clickable |
+| 藏干 | Stacked list of `天干 五行` pairs |
+| 副星 | Stacked 十神 names |
+| 納音 | e.g. 白臘金, 佛燈火 (luck cols show `—`) |
+| 星運 | 十二長生 |
+| 空亡 | 2-char combo |
+| 神煞 | Stacked list |
+
+**Interaction**: clicking 天干 or 地支 (including in luck columns) expands an explanation card below with 五行/陰陽/十神/生肖/藏干/星運/神煞 details. Clicking same cell again collapses.
+
+### 5. 五行分佈
+Two-column panel:
+- SVG pentagon radar (木/火/土/金/水 axes), filled polygon `rgba(179,58,44,0.18)`, day-master wuxing has dashed ring
+- Horizontal bars per element with wuxing-colored fill + count + %
+
+### 6. 日主強弱 (simplified)
+- Top row: circular day-master mark (64px, accent-seal border) + level label + `分數 X/100`
+- Strength meter: 8px gradient bar with absolute-positioned black needle, tick labels `極弱 / 偏弱 / 中和 / 偏強 / 極旺`
+- **No summary text, no 喜用/忌神 chips** (removed per latest design)
+
+### 7. 命格概述
+Grey-white card with decorative 「」 quotation marks. Paragraph with text-indent 2em, line-height 2.
+
+### 8. 大運流程
+Horizontal scroll table. Rows: 起運年齡 / 西元年 / 十神 / 天干 / 地支. Large wuxing-colored serif chars (辰未丑戌 brown).
+
+### 9. Footer
+`© 八字排盤 · 僅供命理研究參考`
+
+## Interactions & Behavior
+- **Submit**: 400ms delay → `computeBazi(input)` → smooth scroll to result
+- **Cell click**: toggles explanation panel; only one cell active at a time; slide-down animation
+- **daysInMonth** recomputed reactively on year/month change
+- **Loading**: button text `起 盤` → `排盤中…`, disabled
+
+## State Management
+```ts
+// App
+result: BaziResult | null
+loading: boolean
+input: FormInput | null
+
+// BirthForm
+gender: 'male' | 'female'
+calendar: 'solar' | 'lunar'
+name, year, month, day, hour, minute
+
+// BaziTable
+selected: { type: 'gan' | 'zhi', pillar: 'year'|'month'|'day'|'hour'|'dayun'|'liunian' } | null
+```
+
+## Data Contract — `computeBazi(input)`
+
+```ts
+type Pillar = {
+  name: string;
+  gan: TianGan;
+  zhi: DiZhi;
+  zhuxing: string;
+  fuxing: string[];
+  nayin: string;
+  xingyun: string;
+  kongwang: string;
+  shensha: string[];
+};
+
+type LuckCol = {
+  name: '大運' | '流年';
+  label: string;       // e.g. "33歲"
+  subLabel: string;    // e.g. "2022"
+  gan: TianGan;
+  zhi: DiZhi;
+  zhuxing: string;
+  fuxing: string[];
+  xingyun: string;
+  kongwang?: string;
+  shensha?: string[];
+};
+
+type BaziResult = {
+  pillars: { year: Pillar; month: Pillar; day: Pillar; hour: Pillar };
+  currentLuck?: { dayun: LuckCol; liunian: LuckCol };    // NEW
+  rizhu: { gan: TianGan; wuxing: Wuxing; yinyang: '陽'|'陰' };
+  wuxingCount: Record<Wuxing, number>;
+  strength: {
+    level: string;                // e.g. "身弱"
+    score: number;                // 0-100
+    favorable: Wuxing[];          // kept in contract (even though UI hides them)
+    unfavorable: Wuxing[];
+    summary?: string;             // optional; current UI doesn't render it
+  };
+  overview: string;
+  dayun: Array<{ age: number; ganZhi: string; gan: TianGan; zhi: DiZhi; shishen: string; year: number }>;
+};
+```
+
+**Frontend lookup tables** (keep on client — see `bazi-data.js`):
+- `TIAN_GAN[char]` → `{wuxing, yinyang, color}`
+- `DI_ZHI[char]` → `{wuxing, zodiac, canggan: [[gan, wuxing], ...]}`
+- `SHISHEN_DESC`, `CHANGSHENG_DESC`, `SHENSHA_DESC` (十神/十二長生/神煞 descriptions)
+
+## Assets
+- Google Fonts: Noto Serif TC (400/500/600/700/900), Noto Sans TC (400/500/700)
+- No images / icons — all typography-driven
+- Subtle paper-grain via layered radial + repeating-linear gradients on `body`
+
+## Responsive
+- 720px: form fields wrap 2-per-row, gan/zhi chars 38→30px
+- 640px: wuxing panel 2-col → 1-col
+- Main table gets horizontal scroll on narrow screens (big — 7 columns now)
+
+## Files Included
+- `index.html` — app shell + App component + section layout
+- `styles.css` — all styles + tokens (includes `.luck-head` / `.luck-col` / `.w-tu-earth`)
+- `bazi-data.js` — lookup tables + `mockBazi()` + `computeBazi(input)` entry
+- `BirthForm.jsx` — input form
+- `BaziTable.jsx` — main 4+2-pillar table + click-to-explain (handles luck columns)
+- `ResultPanels.jsx` — WuxingChart / StrengthPanel (simplified) / OverviewCard / DayunTable
+
+## Implementation Notes for Claude Code
+1. Convert each `.jsx` into a proper React module (ES imports, no `window.*` globals).
+2. Move `bazi-data.js` constants into typed modules (TypeScript enums for 天干/地支/五行 recommended).
+3. Replace `mockBazi()` with real calculation — server-side recommended (for solar terms, true solar time, 大運起運計算, 流年干支, etc). Client libs like `lunar-javascript` work for basic cases.
+4. Keep the exact return shape — UI components rely on it.
+5. Preserve color palette + typography exactly.
+6. Reversed pillar order (時→日→月→年) is intentional, don't "fix" it.
+7. `currentLuck` is optional in the contract — table gracefully renders without it if not provided.
+
 
 ## About the Design Files
 This bundle contains **HTML design references** — a working prototype showing the intended look, layout, and interactions. It is **not production code to copy directly**. The task is to **recreate these designs in the target codebase's existing environment** (React, Vue, Next.js, etc.) using that codebase's established patterns, components, and styling system. If no environment exists yet, pick the best-fit framework for the project.

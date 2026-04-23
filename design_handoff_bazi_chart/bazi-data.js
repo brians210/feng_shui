@@ -106,6 +106,10 @@ function mockBazi(input) {
       day:   { name: '日柱', gan: '庚', zhi: '辰', zhuxing: '日主', fuxing: ['偏印','正財','傷官'], nayin: '白臘金', xingyun: '養', kongwang: '申酉', shensha: ['伏吟','華蓋','流霞','魁罡'] },
       hour:  { name: '時柱', gan: '辛', zhi: '巳', zhuxing: '劫財', fuxing: ['七殺','偏印','比肩'], nayin: '白臘金', xingyun: '長生', kongwang: '申酉', shensha: ['天喜','劫煞','孤辰','地網','天德合','學堂'] },
     },
+    currentLuck: {
+      dayun: { name: '大運', label: '33歲', subLabel: '2022', gan: '辛', zhi: '未', zhuxing: '劫財', fuxing: ['正印','正財','正官'], xingyun: '衰', kongwang: '戌亥' },
+      liunian: { name: '流年', label: '37歲', subLabel: '2026', gan: '丙', zhi: '午', zhuxing: '七殺', fuxing: ['正官','正印'], xingyun: '沐浴', kongwang: '戌亥' },
+    },
     rizhu: { gan: '庚', wuxing: '金', yinyang: '陽' },
     wuxingCount: { '木': 2, '火': 3, '土': 4, '金': 3, '水': 1 },
     strength: {
